@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Plot Finder</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 2rem;
+        }
+
+        /* Input form styles */
+        .input-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        #plotInput {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        #plotInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        #submitBtn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        #submitBtn:hover:not(:disabled) {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        #submitBtn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* Error display */
+        .error {
+            display: none;
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .error-icon {
+            margin-right: 0.5rem;
+        }
+
+        /* Results container */
+        .results {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .movie-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #e9ecef;
+        }
+
+        .movie-header {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .movie-poster {
+            flex-shrink: 0;
+        }
+
+        .movie-poster img {
+            width: 150px;
+            height: 225px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .placeholder-poster {
+            width: 150px;
+            height: 225px;
+            background: #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .movie-info {
+            flex: 1;
+        }
+
+        .movie-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .movie-ratings {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .rating-item {
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            border: 1px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        .movie-plot {
+            margin-top: 2rem;
+        }
+
+        .movie-plot h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .movie-plot p {
+            line-height: 1.7;
+            color: #555;
+        }
+
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .header {
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .main-content {
+                padding: 1.5rem;
+            }
+
+            .movie-header {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .movie-poster img,
+            .placeholder-poster {
+                width: 120px;
+                height: 180px;
+            }
+
+            .movie-title {
+                font-size: 1.5rem;
+            }
+
+            .movie-ratings {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            #submitBtn {
+                padding: 0.8rem 1.5rem;
+            }
+
+            .movie-poster img,
+            .placeholder-poster {
+                width: 100px;
+                height: 150px;
+            }
+
+            .movie-title {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎬 Movie Plot Finder</h1>
+            <p>Describe a movie plot and discover what movie it is!</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Input Form Section -->
+            <section class="input-section">
+                <form id="plotForm">
+                    <div class="form-group">
+                        <label for="plotInput">Movie Plot Description:</label>
+                        <textarea id="plotInput"
+                            placeholder="Enter a movie plot description here... For example: 'A young farm boy discovers he has magical powers and must save the galaxy from an evil empire with the help of rebels and a wise old mentor.'"
+                            required></textarea>
+                    </div>
+                    <button type="submit" id="submitBtn">Find Movie</button>
+                </form>
+            </section>
+
+            <!-- Error Display -->
+            <div id="errorDisplay" class="error">
+                <span class="error-icon">⚠️</span>
+                <span id="errorMessage"></span>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="loading">
+                <div class="spinner"></div>
+                <div class="loading-text">Analyzing plot and finding movie...</div>
+            </div>
+
+            <!-- Results Container -->
+            <section id="resultsContainer" class="results">
+                <div class="movie-card">
+                    <div class="movie-header">
+                        <div class="movie-poster">
+                            <img id="moviePoster" src="" alt="Movie Poster" style="display: none;">
+                            <div id="posterPlaceholder" class="placeholder-poster">
+                                🎬<br>No poster<br>available
+                            </div>
+                        </div>
+                        <div class="movie-info">
+                            <h2 id="movieTitle" class="movie-title"></h2>
+                            <div id="movieRatings" class="movie-ratings">
+                                <!-- Ratings will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="movie-plot">
+                        <h3>Plot Summary</h3>
+                        <p id="moviePlotText"></p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            GROQ_API_URL: 'https://api.groq.com/openai/v1/chat/completions',
+            TMDB_API_URL: 'https://api.themoviedb.org/3/search/movie',
+            TMDB_IMAGE_BASE_URL: 'https://image.tmdb.org/t/p/w500',
+            // Note: In production, API keys should be handled securely
+            GROQ_API_KEY: '', // User needs to set this
+            TMDB_API_KEY: '' // User needs to set this
+        };
+
+        // DOM Elements
+        const elements = {
+            form: document.getElementById('plotForm'),
+            plotInput: document.getElementById('plotInput'),
+            submitBtn: document.getElementById('submitBtn'),
+            errorDisplay: document.getElementById('errorDisplay'),
+            errorMessage: document.getElementById('errorMessage'),
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            resultsContainer: document.getElementById('resultsContainer'),
+            movieTitle: document.getElementById('movieTitle'),
+            moviePoster: document.getElementById('moviePoster'),
+            posterPlaceholder: document.getElementById('posterPlaceholder'),
+            movieRatings: document.getElementById('movieRatings'),
+            moviePlotText: document.getElementById('moviePlotText')
+        };
+
+        // State management
+        let isProcessing = false;
+
+        // Initialize the application
+        function init() {
+            elements.form.addEventListener('submit', handleFormSubmit);
+            elements.plotInput.addEventListener('input', clearError);
+
+            // Check for API keys on load
+            if (!CONFIG.GROQ_API_KEY || !CONFIG.TMDB_API_KEY) {
+                showError('Please configure your API keys. Set GROQ_API_KEY and TMDB_API_KEY in the CONFIG object.');
+            }
+        }
+
+        // Form submission handler
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+
+            if (isProcessing) return;
+
+            const plotText = elements.plotInput.value.trim();
+
+            // Input validation
+            if (!validateInput(plotText)) {
+                return;
+            }
+
+            try {
+                setProcessingState(true);
+                clearError();
+                hideResults();
+
+                // Process plot with Groq API
+                const responseData = await processPlotWithGroq(plotText);
+
+                // Fetch posters for all movies
+                for (const movie of responseData.movies) {
+                    const posterUrl = await fetchMoviePoster(movie.name);
+                    movie.posterUrl = posterUrl;
+                }
+
+                // Display results
+                displayResults(responseData.movies);
+
+            } catch (error) {
+                console.error('Error processing plot:', error);
+                showError(error.message || 'An error occurred while processing your request. Please try again.');
+            } finally {
+                setProcessingState(false);
+            }
+        }
+
+        // Input validation
+        function validateInput(plotText) {
+            if (!plotText) {
+                showError('Please enter a movie plot description.');
+                return false;
+            }
+
+            if (plotText.length < 10) {
+                showError('Please provide a more detailed plot description (at least 10 characters).');
+                return false;
+            }
+
+            if (!CONFIG.GROQ_API_KEY) {
+                showError('Groq API key is not configured.');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Groq API integration
+        async function processPlotWithGroq(plotText) {
+            const prompt = `Based on this movie plot description, identify 3-5 possible movies that match and return ONLY a JSON object with this exact structure. Do not include any other text, explanations, or formatting - just the raw JSON:
+
+{
+  "movies": [
+    {
+      "name": "Movie Title 1",
+      "plot": "Detailed plot summary",
+      "ratings": {
+        "imdb": "X.X/10",
+        "rotten_tomatoes": "XX%"
+      }
+    },
+    {
+      "name": "Movie Title 2", 
+      "plot": "Detailed plot summary",
+      "ratings": {
+        "imdb": "X.X/10",
+        "rotten_tomatoes": "XX%"
+      }
+    }
+  ]
+}
+
+Plot description: ${plotText}
+
+Return only the JSON object with multiple movie possibilities, no additional text.`;
+
+            const requestBody = {
+                model: 'llama-3.1-8b-instant',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                temperature: 0.1,
+                max_tokens: 1000
+            };
+
+            console.log('Sending request to Groq:', requestBody);
+
+            const response = await fetch(CONFIG.GROQ_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${CONFIG.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Groq API error response:', errorText);
+                throw new Error(`Groq API error: ${response.status} ${response.statusText}. ${errorText}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0]?.message?.content;
+
+            if (!content) {
+                throw new Error('No response received from Groq API');
+            }
+
+            try {
+                // Parse JSON response
+                const responseData = JSON.parse(content);
+
+                // Validate required fields for multiple movies
+                if (!responseData.movies || !Array.isArray(responseData.movies) || responseData.movies.length === 0) {
+                    throw new Error('Invalid movie data received');
+                }
+
+                // Validate each movie has required fields
+                for (const movie of responseData.movies) {
+                    if (!movie.name || !movie.plot) {
+                        throw new Error('Invalid movie data received');
+                    }
+                }
+
+                return responseData;
+            } catch (parseError) {
+                console.error('JSON parsing error:', parseError);
+                throw new Error('Unable to process the movie plot. Please try a different description.');
+            }
+        }
+
+        // TMDB API integration
+        async function fetchMoviePoster(movieName) {
+            if (!CONFIG.TMDB_API_KEY) {
+                console.warn('TMDB API key not configured, skipping poster fetch');
+                return null;
+            }
+
+            try {
+                const searchUrl = `${CONFIG.TMDB_API_URL}?api_key=${CONFIG.TMDB_API_KEY}&query=${encodeURIComponent(movieName)}`;
+
+                const response = await fetch(searchUrl);
+
+                if (!response.ok) {
+                    console.error('TMDB API error:', response.status, response.statusText);
+                    return null;
+                }
+
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    const movie = data.results[0];
+                    if (movie.poster_path) {
+                        return `${CONFIG.TMDB_IMAGE_BASE_URL}${movie.poster_path}`;
+                    }
+                }
+
+                return null;
+            } catch (error) {
+                console.error('Error fetching poster:', error);
+                return null;
+            }
+        }
+
+        // UI State Management
+        function setProcessingState(processing) {
+            isProcessing = processing;
+            elements.submitBtn.disabled = processing;
+            elements.plotInput.disabled = processing;
+
+            if (processing) {
+                elements.loadingIndicator.classList.add('show');
+                elements.submitBtn.textContent = 'Processing...';
+            } else {
+                elements.loadingIndicator.classList.remove('show');
+                elements.submitBtn.textContent = 'Find Movie';
+            }
+        }
+
+        // Error handling
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            elements.errorDisplay.classList.add('show');
+        }
+
+        function clearError() {
+            elements.errorDisplay.classList.remove('show');
+            elements.errorMessage.textContent = '';
+        }
+
+        // Results display
+        function displayResults(movies) {
+            // Clear existing results
+            elements.resultsContainer.innerHTML = '';
+
+            // Create a container for all movie cards
+            const moviesContainer = document.createElement('div');
+
+            // Add a header for multiple results
+            const resultsHeader = document.createElement('h2');
+            resultsHeader.textContent = `Found ${movies.length} possible movies:`;
+            resultsHeader.style.cssText = 'color: #2c3e50; margin-bottom: 2rem; text-align: center; font-size: 1.5rem;';
+            moviesContainer.appendChild(resultsHeader);
+
+            // Create a card for each movie
+            movies.forEach((movie, index) => {
+                const movieCard = createMovieCard(movie, index);
+                moviesContainer.appendChild(movieCard);
+            });
+
+            elements.resultsContainer.appendChild(moviesContainer);
+
+            // Show results container
+            elements.resultsContainer.classList.add('show');
+
+            // Scroll to results
+            elements.resultsContainer.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        function createMovieCard(movieData, index) {
+            const movieCard = document.createElement('div');
+            movieCard.className = 'movie-card';
+            movieCard.style.marginBottom = '2rem';
+
+            movieCard.innerHTML = `
+                <div class="movie-header">
+                    <div class="movie-poster">
+                        <img id="moviePoster${index}" src="" alt="Movie Poster" style="display: none;">
+                        <div id="posterPlaceholder${index}" class="placeholder-poster">
+                            🎬<br>No poster<br>available
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h2 class="movie-title">${movieData.name}</h2>
+                        <div id="movieRatings${index}" class="movie-ratings">
+                            <!-- Ratings will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="movie-plot">
+                    <h3>Plot Summary</h3>
+                    <p>${movieData.plot}</p>
+                </div>
+            `;
+
+            // Handle poster display
+            const posterImg = movieCard.querySelector(`#moviePoster${index}`);
+            const posterPlaceholder = movieCard.querySelector(`#posterPlaceholder${index}`);
+
+            if (movieData.posterUrl) {
+                posterImg.src = movieData.posterUrl;
+                posterImg.alt = `${movieData.name} poster`;
+                posterImg.style.display = 'block';
+                posterPlaceholder.style.display = 'none';
+
+                // Handle poster load error
+                posterImg.onerror = function () {
+                    this.style.display = 'none';
+                    posterPlaceholder.style.display = 'flex';
+                };
+            } else {
+                posterImg.style.display = 'none';
+                posterPlaceholder.style.display = 'flex';
+            }
+
+            // Display ratings
+            const ratingsContainer = movieCard.querySelector(`#movieRatings${index}`);
+            displayRatingsForCard(movieData.ratings, ratingsContainer);
+
+            return movieCard;
+        }
+
+        function displayRatingsForCard(ratings, container) {
+            container.innerHTML = '';
+
+            if (!ratings || typeof ratings !== 'object') {
+                return;
+            }
+
+            // Display each rating
+            Object.entries(ratings).forEach(([source, rating]) => {
+                if (rating) {
+                    const ratingElement = document.createElement('div');
+                    ratingElement.className = 'rating-item';
+
+                    // Format source name
+                    const sourceName = source.replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+
+                    ratingElement.textContent = `${sourceName}: ${rating}`;
+                    container.appendChild(ratingElement);
+                }
+            });
+        }
+
+        function displayRatings(ratings) {
+            elements.movieRatings.innerHTML = '';
+
+            if (!ratings || typeof ratings !== 'object') {
+                return;
+            }
+
+            // Display each rating
+            Object.entries(ratings).forEach(([source, rating]) => {
+                if (rating) {
+                    const ratingElement = document.createElement('div');
+                    ratingElement.className = 'rating-item';
+
+                    // Format source name
+                    const sourceName = source.replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+
+                    ratingElement.textContent = `${sourceName}: ${rating}`;
+                    elements.movieRatings.appendChild(ratingElement);
+                }
+            });
+        }
+
+        function hideResults() {
+            elements.resultsContainer.classList.remove('show');
+        }
+
+        // Input sanitization
+        function sanitizeInput(input) {
+            return input.trim().replace(/[<>]/g, '');
+        }
+
+        // Initialize the application when DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        // Expose configuration for easy setup
+        window.MoviePlotFinder = {
+            setGroqApiKey: function (key) {
+                CONFIG.GROQ_API_KEY = key;
+                clearError();
+            },
+            setTmdbApiKey: function (key) {
+                CONFIG.TMDB_API_KEY = key;
+                clearError();
+            }
+        };
+    </script>
+</body>
+
+</html>
